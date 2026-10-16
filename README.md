@@ -11,7 +11,9 @@ python -m pip install -r requirements.txt
 python stress_monitor.py
 ```
 
-Demo mode is the default and cycles through repeatable BPM values, so it runs without a paired watch. The included track is loaded from `musicplay/`.
+Demo mode is the default and runs without a paired watch. It plays a repeatable scenario: baseline readings, a sustained elevated episode, then recovery. After 15 seconds above the demo threshold, it prints a console-only demo alert; it does not send email. The recovery step prints an optional breathing cue. The included track is loaded from `musicplay/`.
+
+This simulated scenario demonstrates program behavior; it is not a stress diagnosis or medical advice.
 
 ## Connect a watch app
 

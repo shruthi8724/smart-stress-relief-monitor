@@ -32,7 +32,11 @@ APP_PASSWORD = os.getenv("STRESS_MONITOR_APP_PASSWORD", "")
 RECEIVER_EMAIL = os.getenv("STRESS_MONITOR_RECEIVER", "")
 
 MUSIC_FILE = Path(__file__).resolve().parent / "musicplay" / "mixkit-yoga-song-444.mp3"
-DEMO_BPM_VALUES = itertools.cycle((88, 108, 112, 96))
+DEMO_HIGH_DURATION = 15
+DEMO_BPM_VALUES = itertools.chain(
+    (78, 80, 79, 82, 108, 112, 115, 110, 92, 88, 84),
+    itertools.repeat(78),
+)
 latest_bpm = None
 latest_bpm_at = None
 bpm_lock = threading.Lock()
@@ -102,7 +106,7 @@ def stop_music():
 # -------- HEART RATE (SIMULATION) ---------
 
 def get_heart_rate():
-    """Return a repeatable BPM value for demos without a paired watch."""
+    """Return a scripted elevated-heart-rate scenario for demos without a watch."""
     return next(DEMO_BPM_VALUES)
 
 
@@ -155,6 +159,8 @@ def parse_args():
 def main(args):
     print("Smart Stress Relief Monitor Started")
     print("Press Ctrl+C to stop.\n")
+    if args.source == "demo":
+        print("Demo scenario: baseline, elevated episode, then recovery. No email will be sent.\n")
 
     server = None
     if args.source == "watch":
@@ -193,17 +199,31 @@ def main(args):
 
                 elapsed = time.time() - high_start
 
-                if elapsed >= HIGH_DURATION and not email_sent:
-                    try:
-                        send_email(bpm)
+                alert_duration = DEMO_HIGH_DURATION if args.source == "demo" else HIGH_DURATION
+                if elapsed >= alert_duration and not email_sent:
+                    if args.source == "demo":
+                        print(
+                            f"DEMO ALERT: BPM stayed above {THRESHOLD_BPM} for "
+                            f"{DEMO_HIGH_DURATION} seconds. No email was sent."
+                        )
+                        logging.info("Demo alert: BPM=%s", bpm)
                         email_sent = True
-                    except Exception as error:
-                        print("Email failed:", error)
-                        logging.exception(error)
+                    else:
+                        try:
+                            send_email(bpm)
+                            email_sent = True
+                        except Exception as error:
+                            print("Email failed:", error)
+                            logging.exception(error)
             else:
+                recovered = high_start is not None
                 high_start = None
                 email_sent = False
                 stop_music()
+                if recovered and args.source == "demo":
+                    print(
+                        "Recovery cue: try a comfortable slow breath, then let the exhale be a little longer."
+                    )
 
             time.sleep(CHECK_INTERVAL)
     finally:
