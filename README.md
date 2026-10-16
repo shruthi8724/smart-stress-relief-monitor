@@ -1,6 +1,6 @@
 # Smart Stress Relief Monitor
 
-Monitors heart rate, plays a calming track above the BPM threshold, and can send an email alert if the high reading continues.
+Python prototype that plays calming music when BPM rises above a threshold. It includes a scripted demo and an optional HTTP endpoint for BPM readings sent by an external app or bridge. It does not connect directly to a smartwatch or Google Fit.
 
 ## Run a demo
 
@@ -11,13 +11,13 @@ python -m pip install -r requirements.txt
 python stress_monitor.py
 ```
 
-Demo mode is the default and runs without a paired watch. It plays a repeatable scenario: baseline readings, a sustained elevated episode, then recovery. After 15 seconds above the demo threshold, it prints a console-only demo alert; it does not send email. The recovery step prints an optional breathing cue. The included track is loaded from `musicplay/`.
+Demo mode is the default and needs no watch. It plays a scripted sequence of baseline, elevated, and recovery readings. Music starts above 100 BPM and stops when the reading falls below the threshold. After 15 seconds of elevated demo readings, it prints a demo alert without sending email, followed by an optional breathing cue. The included track is loaded from `musicplay/`.
 
-This simulated scenario demonstrates program behavior; it is not a stress diagnosis or medical advice.
+This uses simulated readings to demonstrate behavior; it is not a stress diagnosis or medical advice.
 
-## Connect a watch app
+## Optional external BPM input
 
-The watch app (or a companion bridge that can access its heart-rate data) must be able to send HTTP `POST` requests. Start the monitor in receiver mode:
+Watch mode starts an HTTP receiver. An external app or bridge must provide the BPM readings; this repository does not include a watch app or a direct wearable integration. Start the receiver with:
 
 ```powershell
 python stress_monitor.py --source watch
@@ -37,8 +37,8 @@ For example, test the receiver from another PowerShell window:
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8765/bpm -ContentType 'application/json' -Body '{"bpm": 108}'
 ```
 
-For a phone or watch app on the same Wi-Fi, bind to the computer's LAN address with `--host 0.0.0.0`, then configure the app/bridge to POST to the computer's LAN IP on port `8765`. Allow the port through the firewall only on a trusted network. The app's vendor and model determine whether it can send readings directly; many require a companion bridge or their own API. Do not expose this receiver to the public internet.
+To receive readings from another device on the same trusted Wi-Fi, bind with `--host 0.0.0.0` and configure the app or bridge to POST to this computer's LAN IP on port `8765`. The receiver has no authentication; only use it on a trusted network and do not expose it to the public internet.
 
 ## Optional email alerts
 
-Set `STRESS_MONITOR_SENDER`, `STRESS_MONITOR_APP_PASSWORD`, and `STRESS_MONITOR_RECEIVER` as environment variables to enable SMTP alerts. Use an email-provider app password, not your account password. Never commit credentials to GitHub.
+In watch mode, an email alert is attempted if BPM stays above 100 for 120 seconds. Configure `STRESS_MONITOR_SENDER`, `STRESS_MONITOR_APP_PASSWORD`, and `STRESS_MONITOR_RECEIVER` as environment variables to enable SMTP. The demo mode never sends email. Use an email-provider app password, not your account password, and never commit credentials to GitHub.
